@@ -2,6 +2,7 @@ package pl.edu.agh.mwo.invoice.product;
 
 import java.math.BigDecimal;
 
+
 public abstract class Product {
     private final String name;
 
@@ -10,24 +11,29 @@ public abstract class Product {
     private final BigDecimal taxPercent;
 
     protected Product(String name, BigDecimal price, BigDecimal tax) {
+        if ( name == null || name.isEmpty())
+            throw new IllegalArgumentException("Product name can not be null or empty");
+
+        if ( price == null || price.compareTo(BigDecimal.ZERO) < 0)
+            throw new IllegalArgumentException("Price can not be null or less than 0");
         this.name = name;
         this.price = price;
         this.taxPercent = tax;
     }
 
     public String getName() {
-        return null;
+        return name;
     }
 
     public BigDecimal getPrice() {
-        return null;
+        return price;
     }
 
     public BigDecimal getTaxPercent() {
-        return null;
+        return taxPercent;
     }
 
     public BigDecimal getPriceWithTax() {
-        return null;
+        return price.add(price.multiply(taxPercent));
     }
 }
