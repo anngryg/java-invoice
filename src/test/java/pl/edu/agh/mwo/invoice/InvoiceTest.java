@@ -1,17 +1,14 @@
 package pl.edu.agh.mwo.invoice;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import pl.edu.agh.mwo.invoice.Invoice;
-import pl.edu.agh.mwo.invoice.product.DairyProduct;
-import pl.edu.agh.mwo.invoice.product.OtherProduct;
-import pl.edu.agh.mwo.invoice.product.Product;
-import pl.edu.agh.mwo.invoice.product.TaxFreeProduct;
+import pl.edu.agh.mwo.invoice.product.*;
 
 public class InvoiceTest {
     private Invoice invoice;
@@ -101,7 +98,7 @@ public class InvoiceTest {
     }
 
     @Test
-    public void testInvoiceHasPropoerTotalWithQuantityMoreThanOne() {
+    public void testInvoiceHasProperTotalWithQuantityMoreThanOne() {
         // 2x chleb - price with tax: 10
         invoice.addProduct(new TaxFreeProduct("Chleb", new BigDecimal("5")), 2);
         // 3x chedar - price with tax: 32.40
@@ -143,4 +140,64 @@ public class InvoiceTest {
         int n2 = new Invoice().getNumber();
         Assert.assertThat(n2, Matchers.greaterThan(n1));
     }
+
+    @Test
+    public void testPrintInvoice(){
+        Invoice invoice = new Invoice();
+        Product product1 = new TaxFreeProduct("Pasta", new BigDecimal("15"));
+        Product product2 = new DairyProduct("Mleko", new BigDecimal("10"));
+        Product product3 = new OtherProduct("Skarpety", new BigDecimal("20"));
+
+        invoice.addProduct(product1);
+        invoice.addProduct(product2, 10);
+        invoice.addProduct(product3, 20);
+        String output = "Numer faktury: " + invoice.getNumber() + "\n" +
+                "Nazwa produktu: Mleko ...... liczba sztuk: 10 ...... Cena netto: 10PLN ...... VAT: 8.00% ...... Wartość brutto: 108.00PLN\n" +
+                "Nazwa produktu: Pasta ...... liczba sztuk: 1 ...... Cena netto: 15PLN ...... VAT: 0% ...... Wartość brutto: 15PLN\n" +
+                "Nazwa produktu: Skarpety ...... liczba sztuk: 20 ...... Cena netto: 20PLN ...... VAT: 23.00% ...... Wartość brutto: 492.00PLN\n" +
+                "Liczba pozycji na fakturze: 3"+
+                "\nRazem do zapłaty: 615.00 PLN";
+
+        Assert.assertEquals(output, invoice.printInvoice());
+    }
+
+    @Test
+    public void testAddingDuplicate(){
+        Invoice invoice = new Invoice();
+        Product product1 = new TaxFreeProduct("Kapusta", new BigDecimal("5"));
+
+        invoice.addProduct(product1, 10);
+        invoice.addProduct(product1, 10);
+
+        String output = "Numer faktury: " + invoice.getNumber() + "\n" +
+                "Nazwa produktu: Kapusta ...... liczba sztuk: 20 ...... Cena netto: 5PLN ...... VAT: 0% ...... Wartość brutto: 100PLN\n" +
+                "Liczba pozycji na fakturze: 1"+
+                "\nRazem do zapłaty: 100 PLN";
+
+        Assert.assertEquals(output, invoice.printInvoice());
+    }
+
+    @Test
+    public void testBottleOfWineAndFuel() {
+        invoice.addProduct(new BottleOfWine("Vihno Verde", new BigDecimal("14")), 1);
+        invoice.addProduct(new FuelCanister("pb 95", new BigDecimal("3")), 10);
+
+        Assert.assertThat(new BigDecimal("115.28"), Matchers.comparesEqualTo(invoice.getGrossTotal()));
+    }
+
+    @Test
+    public void testFuelPriceMotherInLawDay() {
+        FuelCanister product1 = new FuelCanister("pb 95", new BigDecimal("10"));
+        LocalDate motherInLawDay = LocalDate.of(LocalDate.now().getYear(), 3, 5);
+        FuelCanister.setTestMotherInLawDay(motherInLawDay);
+        BigDecimal expectedPriceWithTax = new BigDecimal("15.56");
+        Assert.assertEquals(expectedPriceWithTax, product1.getPriceWithTax());
+    }
+    @Test
+    public void testFuelPriceOnRegularDay() {
+        FuelCanister product1 = new FuelCanister("pb 98", new BigDecimal("10"));
+        BigDecimal expectedPriceWithTax = new BigDecimal("17.86");
+        Assert.assertEquals(expectedPriceWithTax, product1.getPriceWithTax());
+    }
+
 }
